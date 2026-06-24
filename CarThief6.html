@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Car Thief 6 — Night Crime (Remake)</title>
+<style>
+  :root{
+    --beige:#d4c39a; --beige2:#c9b78c; --paper:#e8dcb8; --panel:#cdbd92;
+    --dark:#5a4a2a; --blue:#1d3f8f; --blue2:#3a5fbf; --gold:#b8860b;
+    --red:#8f1d1d; --green:#2a6f2a; --ink:#2e2614;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#23262e; display:flex; align-items:center; justify-content:center;
+    font-family:Tahoma, Verdana, Geneva, sans-serif; font-size:12px; color:var(--ink);
+    padding:8px;
+  }
+  #win{
+    width:980px; max-width:100%; height:660px; max-height:98vh;
+    background:var(--beige); border:3px solid var(--blue);
+    box-shadow:0 8px 40px rgba(0,0,0,.6);
+    display:flex; flex-direction:column;
+  }
+  /* ---------- title bar ---------- */
+  #titlebar{
+    background:linear-gradient(90deg,#0d2a6e,#3a5fbf); color:#fff;
+    padding:3px 8px; font-weight:bold; font-size:12px;
+    display:flex; justify-content:space-between; align-items:center; flex:0 0 auto;
+  }
+  #titlebar .btns span{
+    display:inline-block; width:16px; height:14px; background:var(--beige);
+    color:#000; text-align:center; line-height:13px; font-size:10px;
+    border:1px outset #fff; margin-left:2px; cursor:default;
+  }
+  /* ---------- generic chrome ---------- */
+  .panel{
+    background:var(--panel); border:2px outset #efe5c0; padding:4px;
+  }
+  .inset{ background:var(--paper); border:2px inset #efe5c0; }
+  button, .btn{
+    font-family:inherit; font-size:11px; background:var(--beige);
+    border:2px outset #f3ead0; padding:2px 10px; cursor:pointer; color:var(--ink);
+  }
+  button:active{ border-style:inset; }
+  button:disabled{ color:#999; cursor:default; }
+  button.primary{ background:#ccd8f2; }
+  button.danger{ background:#e7c9c9; }
+  h3.bar{
+    background:linear-gradient(90deg,#6e5a2e,#a98f52); color:#fff; font-size:11px;
+    padding:2px 6px; margin:-4px -4px 4px -4px; font-weight:bold;
+  }
+  .muted{ color:#6e6248; }
+  .gold{ color:var(--gold); font-weight:bold; }
+  .red{ color:var(--red); font-weight:bold; }
+  .green{ color:var(--green); font-weight:bold; }
+  /* ---------- top bar ---------- */
+  #topbar{
+    display:flex; gap:6px; padding:5px 6px; align-items:stretch; flex:0 0 auto;
+    background:var(--beige2); border-bottom:2px solid #a59265;
+  }
+  #topbar .panel{ display:flex; flex-direction:column; justify-content:center; padding:3px 10px; }
+  #topbar b{ font-size:12px; }
+  #menuBtn{ margin-left:auto; align-self:center; font-weight:bold; padding:6px 18px; }
+  /* ---------- main layout ---------- */
+  #main{ flex:1 1 auto; display:flex; gap:6px; padding:6px; min-height:0; }
+  #leftcol,#rightcol{ width:170px; flex:0 0 170px; display:flex; flex-direction:column; gap:6px; min-height:0;}
+  #mapwrap{ flex:1 1 auto; display:flex; flex-direction:column; min-width:0; }
+  #map{
+    flex:1 1 auto; position:relative; border:2px inset #efe5c0; overflow:hidden;
+    background:#e9d9a8;
+  }
+  #mapbg{ position:absolute; inset:0; width:100%; height:100%; }
+  .poi{
+    position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px;
+    border-radius:50%; border:2px solid #7a6736;
+    background:radial-gradient(circle at 35% 30%, #f7eecb, #cdb572);
+    display:flex; align-items:center; justify-content:center; font-size:17px;
+    cursor:pointer; box-shadow:1px 2px 3px rgba(0,0,0,.4); user-select:none;
+    transition:transform .08s;
+  }
+  .poi:hover{ transform:scale(1.18); z-index:5; }
+  .poi.fixed{ border-color:#1d3f8f; }
+  .poi.done{ filter:grayscale(1); opacity:.45; cursor:default; }
+  .poi .tip{
+    display:none; position:absolute; top:36px; left:50%; transform:translateX(-50%);
+    background:#fffbe8; border:1px solid #7a6736; padding:2px 6px; font-size:10px;
+    white-space:nowrap; z-index:9; pointer-events:none; color:var(--ink);
+  }
+  .poi:hover .tip{ display:block; }
+  /* ---------- bottom bar ---------- */
+  #bottombar{
+    flex:0 0 auto; display:flex; gap:6px; align-items:center;
+    padding:4px 6px; background:var(--beige2); border-top:2px solid #a59265;
+  }
+  #wantedStars{ letter-spacing:2px; font-size:14px; }
+  #log{
+    flex:1 1 auto; height:46px; overflow-y:auto; font-size:11px; padding:2px 6px;
+  }
+  #log div{ margin-bottom:1px; }
+  /* ---------- side panels ---------- */
+  .side{ flex:1 1 0; overflow-y:auto; min-height:0; }
+  .slotrow{
+    display:flex; align-items:center; gap:5px; background:var(--paper);
+    border:1px solid #a59265; padding:3px 4px; margin-bottom:3px; cursor:pointer;
+  }
+  .slotrow:hover{ background:#f4ecce; }
+  .slotrow .ic{ font-size:16px; }
+  .slotrow .nm{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .statline{ display:flex; justify-content:space-between; padding:1px 2px; }
+  .meter{ height:8px; background:#9c8a5c; border:1px solid #6e5a2e; }
+  .meter i{ display:block; height:100%; background:linear-gradient(#7fbf6a,#3f8f2a); }
+  .meter.hp i{ background:linear-gradient(#e08a8a,#b03a3a); }
+  /* ---------- modal ---------- */
+  #overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.45);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  #overlay.open{ display:flex; }
+  #modal{
+    width:520px; max-width:94vw; max-height:88vh; display:flex; flex-direction:column;
+    background:var(--beige); border:3px solid var(--blue); box-shadow:0 6px 30px rgba(0,0,0,.6);
+  }
+  #modalTitle{
+    background:linear-gradient(90deg,#0d2a6e,#3a5fbf); color:#fff; font-weight:bold;
+    padding:4px 8px; display:flex; justify-content:space-between;
+  }
+  #modalTitle span.x{ cursor:pointer; padding:0 4px; }
+  #modalBody{ padding:10px; overflow-y:auto; }
+  #modalBody p{ margin-bottom:8px; line-height:1.45; }
+  .choice{
+    display:block; width:100%; text-align:left; margin-bottom:6px; padding:6px 8px;
+  }
+  .choice small{ color:#555; }
+  .rowline{
+    display:flex; justify-content:space-between; align-items:center; gap:6px;
+    background:var(--paper); border:1px solid #a59265; padding:4px 6px; margin-bottom:4px;
+  }
+  table.tbl{ width:100%; border-collapse:collapse; }
+  table.tbl td, table.tbl th{ border:1px solid #a59265; padding:3px 5px; text-align:left; background:var(--paper); }
+  table.tbl th{ background:var(--beige2); }
+  /* ---------- character creation ---------- */
+  #screen-create{ flex:1; overflow-y:auto; padding:14px 18px; }
+  #screen-create h1{ font-size:18px; color:var(--blue); margin-bottom:2px; }
+  #screen-create h2{ font-size:12px; color:#6e5a2e; margin-bottom:12px; font-weight:normal; }
+  .createGrid{ display:flex; gap:14px; flex-wrap:wrap; }
+  .createGrid .panel{ flex:1 1 280px; }
+  .classCard{ display:flex; gap:8px; align-items:center; background:var(--paper);
+    border:2px solid #a59265; padding:6px; margin-bottom:6px; cursor:pointer; }
+  .classCard.sel{ border-color:var(--blue); background:#dfe7f7; }
+  .classCard .face{ font-size:26px; }
+  .diffBtn{ margin-right:6px; }
+  .diffBtn.sel{ border-style:inset; background:#ccd8f2; }
+  input[type=text]{
+    font-family:inherit; font-size:12px; padding:3px 5px;
+    border:2px inset #efe5c0; background:#fffbe8; width:100%;
+  }
+  .skillgrid{ display:grid; grid-template-columns:auto 1fr auto; gap:2px 8px; align-items:center; }
+  .dots i{ display:inline-block; width:9px; height:9px; border-radius:50%;
+    background:#9c8a5c; margin-right:2px; }
+  .dots i.on{ background:var(--blue); }
+  ::-webkit-scrollbar{ width:12px; height:12px;}
+  ::-webkit-scrollbar-track{ background:var(--beige2); border:1px solid #a59265;}
+  ::-webkit-scrollbar-thumb{ background:var(--beige); border:2px outset #f3ead0;}
+</style>
+</head>
+<body>
+<div id="win">
+  <div id="titlebar">
+    <span>Maxima Games Car Thief 6 — Night Crime (Mac Remake)</span>
+    <span class="btns"><span>_</span><span>□</span><span>✕</span></span>
+  </div>
+
+  <!-- ======== CHARACTER CREATION ======== -->
+  <div id="screen-create">
+    <h1>CAR THIEF 6 · NIGHT CRIME</h1>
+    <h2>You owe the Syndicate a fortune. Pay it back — or end up in the bay. Welcome to Miami.</h2>
+    <div class="createGrid">
+      <div class="panel">
+        <h3 class="bar">Identity</h3>
+        <p style="margin-bottom:4px">Street name:</p>
+        <input type="text" id="cName" maxlength="16" value="Snake">
+        <p style="margin:8px 0 4px">Difficulty:</p>
+        <button class="diffBtn sel" data-d="0">Easy</button>
+        <button class="diffBtn" data-d="1">Normal</button>
+        <button class="diffBtn" data-d="2">Hardcore</button>
+        <p class="muted" id="diffDesc" style="margin-top:6px"></p>
+      </div>
+      <div class="panel">
+        <h3 class="bar">Background (class)</h3>
+        <div id="classList"></div>
+      </div>
+      <div class="panel">
+        <h3 class="bar">Starting skills</h3>
+        <div class="skillgrid" id="skillPreview"></div>
+        <p class="muted" style="margin-top:8px">Skills are tested with a d20 roll — higher skill, better odds. You gain XP on every success.</p>
+        <br>
+        <button class="primary" id="startBtn" style="width:100%;padding:8px;font-weight:bold">▶ Hit the streets</button>
+        <button id="loadFromCreate" style="width:100%;margin-top:6px">Load saved game…</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== GAME ======== -->
+  <div id="screen-game" style="display:none; flex:1 1 auto; flex-direction:column; min-height:0;">
+    <div id="topbar">
+      <div class="panel"><span class="muted">Day</span><b id="uiDay">1</b></div>
+      <div class="panel"><span class="muted">Cash</span><b class="green" id="uiCash">$0</b></div>
+      <div class="panel"><span class="muted">Debt</span><b class="red" id="uiDebt">$0</b></div>
+      <div class="panel"><span class="muted">Daily costs</span><b id="uiCosts">$0</b></div>
+      <div class="panel"><span class="muted">Actions left</span><b id="uiAP">4</b></div>
+      <button id="menuBtn">Menu ▾</button>
+    </div>
+
+    <div id="main">
+      <div id="leftcol">
+        <div class="panel">
+          <h3 class="bar" id="uiName">—</h3>
+          <div style="text-align:center;font-size:34px" id="uiFace">🕶️</div>
+          <div class="statline"><span>Level</span><b id="uiLvl">1</b></div>
+          <div class="statline"><span>XP</span><b id="uiXP">0</b></div>
+          <div class="statline"><span>Health</span><b id="uiHPt">100%</b></div>
+          <div class="meter hp"><i id="uiHP" style="width:100%"></i></div>
+        </div>
+        <div class="panel side">
+          <h3 class="bar">Skills</h3>
+          <div class="skillgrid" id="uiSkills"></div>
+          <div id="uiSkillPts" class="muted" style="margin-top:6px"></div>
+          <h3 class="bar" style="margin-top:8px">Gear</h3>
+          <div id="uiGear" class="muted">none</div>
+        </div>
+      </div>
+
+      <div id="mapwrap">
+        <div id="map">
+          <svg id="mapbg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 600 440"></svg>
+          <div id="pois"></div>
+        </div>
+      </div>
+
+      <div id="rightcol">
+        <div class="panel">
+          <h3 class="bar">Active Team</h3>
+          <div id="uiCrew"><span class="muted">working alone</span></div>
+        </div>
+        <div class="panel">
+          <h3 class="bar">Hide-out</h3>
+          <div id="uiHideout"></div>
+        </div>
+        <div class="panel side">
+          <h3 class="bar">Garage</h3>
+          <div id="uiGarage"><span class="muted">empty</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottombar">
+      <div class="panel" style="padding:3px 8px">Wanted&nbsp;<span id="wantedStars"></span></div>
+      <div id="log" class="inset"></div>
+      <div class="panel" style="padding:3px 8px">📍 Miami, FL</div>
+      <button class="primary" id="endDayBtn" style="font-weight:bold;padding:8px 14px">🌙 End Day</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== MODAL ======== -->
+<div id="overlay">
+  <div id="modal">
+    <div id="modalTitle"><span id="modalTitleText">—</span><span class="x" onclick="UI.close()">✕</span></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =================================================================
+   CAR THIEF 6 — NIGHT CRIME · faithful fan remake (personal use)
+   ================================================================= */
+
+/* ---------- utilities ---------- */
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[rnd(0,a.length-1)];
+const fmt$=n=>"$"+Math.round(n).toLocaleString("en-US");
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const SKILLS=["acting","shooting","hiding","driving","locksmith","electronics"];
+
+/* ---------- static data ---------- */
+const CLASSES=[
+ {id:"joyrider", face:"🧢", name:"Joyrider",   desc:"Fast behind the wheel, quick to vanish.", sk:{acting:2,shooting:1,hiding:3,driving:5,locksmith:2,electronics:2}},
+ {id:"locksmith",face:"🔧", name:"Locksmith",  desc:"No door stays closed for long.",          sk:{acting:2,shooting:1,hiding:2,driving:2,locksmith:5,electronics:3}},
+ {id:"conman",   face:"🕴️", name:"Con Man",    desc:"Talks his way into anything.",            sk:{acting:5,shooting:1,hiding:3,driving:2,locksmith:2,electronics:2}},
+ {id:"hacker",   face:"👓", name:"Tech Head",  desc:"Alarms and immobilizers are puzzles.",    sk:{acting:2,shooting:1,hiding:2,driving:2,locksmith:3,electronics:5}},
+ {id:"enforcer", face:"🥊", name:"Enforcer",   desc:"When subtle fails, he doesn't.",          sk:{acting:1,shooting:5,hiding:2,driving:3,locksmith:2,electronics:1}}
+];
+const DIFFS=[
+ {name:"Easy",     debt:400000, cash:5000, interest:.003, copMult:.7,  desc:"Debt $400,000 · 0.3% daily interest · relaxed police."},
+ {name:"Normal",   debt:746800, cash:3000, interest:.005, copMult:1,   desc:"Debt $746,800 · 0.5% daily interest · the classic setup."},
+ {name:"Hardcore", debt:1000000,cash:1500, interest:.008, copMult:1.4, desc:"Debt $1,000,000 · 0.8% daily interest · police everywhere."}
+];
+const CARS=[ // name, base value, difficulty mod, icon
+ {n:"Rusty Compacta",        v:900,    d:0, ic:"🚗"},
+ {n:"Vista Sedan",           v:2200,   d:1, ic:"🚗"},
+ {n:"Brava Hatchback",       v:3500,   d:2, ic:"🚙"},
+ {n:"Workhorse Pickup",      v:5200,   d:3, ic:"🛻"},
+ {n:"Falcon Coupe",          v:9000,   d:5, ic:"🚘"},
+ {n:"Imperator Luxury",      v:18000,  d:7, ic:"🚖"},
+ {n:"Stallion GT",           v:32000,  d:9, ic:"🏎️"},
+ {n:"Vendetta Sport",        v:55000,  d:11,ic:"🏎️"},
+ {n:"Eclipse Supercar",      v:120000, d:13,ic:"🏎️"},
+ {n:"Mirage Hypercar",       v:300000, d:16,ic:"🏎️"}
+];
+const ITEMS=[
+ {id:"slimjim",  n:"Slim Jim",        cost:300,   sk:"locksmith",   b:1, ic:"📏"},
+ {id:"picks",    n:"Pro Lockpicks",   cost:1500,  sk:"locksmith",   b:2, ic:"🗝️"},
+ {id:"laptop",   n:"Code Grabber",    cost:4000,  sk:"electronics", b:2, ic:"💻"},
+ {id:"scanner",  n:"Police Scanner",  cost:2500,  sk:"hiding",      b:2, ic:"📻"},
+ {id:"disguise", n:"Disguise Kit",    cost:1200,  sk:"acting",      b:2, ic:"🎭"},
+ {id:"pistol",   n:"9mm Pistol",      cost:2000,  sk:"shooting",    b:2, ic:"🔫"},
+ {id:"nitro",    n:"Nitro Kit",       cost:6000,  sk:"driving",     b:2, ic:"⚡"},
+ {id:"jammer",   n:"Signal Jammer",   cost:12000, sk:"electronics", b:3, ic:"📡"},
+ {id:"armor",    n:"Kevlar Vest",     cost:5000,  sk:null,          b:0, ic:"🦺", special:"armor"}
+];
+const HIDEOUTS=[
+ {n:"Backstreet lockup", cap:2,  cost:0,      costs:50},
+ {n:"Old warehouse",     cap:4,  cost:15000,  costs:120},
+ {n:"Chop-shop garage",  cap:7,  cost:45000,  costs:250},
+ {n:"Dockside compound", cap:12, cost:120000, costs:500},
+ {n:"Private marina",    cap:20, cost:300000, costs:900}
+];
+const NAMES=["Vinnie","Marco","Lola","Duke","Tasha","Smokey","Ray","Bianca","Carlos","Eddie","Pearl","Knuckles","Slim","Rosa","Tony","Jade","Mickey","Dee","Hector","Ivy"];
+const FIXED_POIS=[
+ {id:"hideout", n:"Hide-out",     ic:"🏚️", x:14, y:78},
+ {id:"fence",   n:"Manny's Fence",ic:"💰", x:78, y:70},
+ {id:"shop",    n:"Pawn Shop",    ic:"🛠️", x:62, y:22},
+ {id:"bar",     n:"Flamingo Bar", ic:"🍺", x:30, y:30},
+ {id:"shark",   n:"Loan Shark",   ic:"🦈", x:86, y:18},
+ {id:"hospital",n:"Free Clinic",  ic:"🏥", x:12, y:16}
+];
+
+/* ---------- mission templates ----------
+   chk: [primary skill, secondary skill]  diff: base d20 target  */
+const MISSIONS=[
+ {id:"pickpocket", n:"Pickpocket",       ic:"👜", chk:["acting","hiding"],      diff:8,  heat:1, minLvl:1,
+   desc:"Tourists on the boardwalk, wallets fat with vacation money.",
+   pay:()=>rnd(150,600)},
+ {id:"carparts",   n:"Strip a car",      ic:"🔩", chk:["locksmith","hiding"],   diff:9,  heat:1, minLvl:1,
+   desc:"A parked car in a dark lot. The rims alone are worth something.",
+   pay:()=>rnd(300,900)},
+ {id:"stealcar",   n:"Steal a car",      ic:"🚗", chk:["locksmith","electronics"],diff:10, heat:2, minLvl:1, car:[0,4],
+   desc:"An unattended car, yours if you can beat the lock and the alarm."},
+ {id:"carjack",    n:"Carjacking",       ic:"🔫", chk:["shooting","driving"],   diff:12, heat:3, minLvl:2, car:[3,7],
+   desc:"Take it at a red light — keys included, witnesses included too."},
+ {id:"burglary",   n:"Burglary",         ic:"🏠", chk:["hiding","locksmith"],   diff:12, heat:2, minLvl:2,
+   desc:"A dark house in the suburbs. In and out before the lights come on.",
+   pay:()=>rnd(1500,6000)},
+ {id:"race",       n:"Street race",      ic:"🏁", chk:["driving","driving"],    diff:12, heat:2, minLvl:2, race:true,
+   desc:"Put money down, drive like hell. Winner takes the pot."},
+ {id:"order",      n:"Special order",    ic:"📋", chk:["locksmith","electronics"],diff:14, heat:3, minLvl:3, order:true,
+   desc:"A collector wants a specific model — delivered tonight, premium paid."},
+ {id:"gang",       n:"Gang trouble",     ic:"👊", chk:["shooting","acting"],    diff:13, heat:2, minLvl:3,
+   desc:"A rival crew is muscling into your turf. Settle it.",
+   pay:()=>rnd(2000,7000)},
+ {id:"mansion",    n:"Mansion job",      ic:"🏛️", chk:["electronics","hiding"], diff:16, heat:4, minLvl:5,
+   desc:"Gated estate, private security, a safe full of bearer bonds.",
+   pay:()=>rnd(8000,25000)},
+ {id:"exotic",     n:"Exotic showroom",  ic:"💎", chk:["electronics","locksmith"],diff:17, heat:5, minLvl:6, car:[7,9],
+   desc:"Behind that glass sits a machine worth more than a house."}
+];
+
+/* ---------- game state ---------- */
+let G=null;
+const SAVEKEY="carthief6_remake_";
+
+function newGame(name, cls, diffIdx){
+  const d=DIFFS[diffIdx];
+  G={
+    ver:1, name:name||"Snake", face:cls.face, cls:cls.id, diff:diffIdx,
+    day:1, cash:d.cash, debt:d.debt, wanted:0, ap:4, apMax:4,
+    hp:100, lvl:1, xp:0, xpNext:100, skillPts:0,
+    skills:{...cls.sk}, gear:[], crew:[], garage:[],
+    hideout:0, arrests:0, over:false, won:false,
+    missions:[], log:[]
+  };
+  genMissions();
+  log(`Day 1. You owe the Syndicate ${fmt$(G.debt)}. The meter is running.`,"red");
+  log(`Daily interest ${ (d.interest*100).toFixed(1) }%. Get stealing.`);
+}
+
+function dailyCosts(){
+  let c=HIDEOUTS[G.hideout].costs;
+  for(const m of G.crew) c+=m.wage;
+  return c;
+}
+function skillOf(sk){
+  let v=G.skills[sk];
+  for(const id of G.gear){ const it=ITEMS.find(i=>i.id===id); if(it&&it.sk===sk) v+=it.b; }
+  return v;
+}
+function crewBonus(sk){
+  let best=0,who=null;
+  for(const m of G.crew){ if(!m.out&&m.sk[sk]>best){best=m.sk[sk];who=m;} }
+  return {b:Math.ceil(best/2),who};
+}
+
+/* ---------- mission generation ---------- */
+function genMissions(){
+  G.missions=[];
+  const n=rnd(8,11);
+  const avail=MISSIONS.filter(m=>G.lvl>=m.minLvl);
+  for(let i=0;i<n;i++){
+    const t=pick(avail);
+    const m={t:t.id, x:rnd(8,92), y:rnd(8,90), done:false};
+    // keep clear of fixed POIs
+    for(const f of FIXED_POIS){ if(Math.abs(f.x-m.x)<9&&Math.abs(f.y-m.y)<9){ m.x=(m.x+18)%84+8; } }
+    if(t.car){ m.car=rnd(t.car[0],t.car[1]); }
+    if(t.order){ m.car=rnd(4,9); m.bonus=1.6+Math.random()*0.6; }
+    if(t.race){ m.stake=[500,1000,2500,5000,10000][rnd(0,Math.min(4,G.lvl-1))]; }
+    G.missions.push(m);
+  }
+}
+
+/* ---------- logging ---------- */
+function log(msg,c){
+  G.log.unshift({m:msg,c:c||""});
+  G.log=G.log.slice(0,60);
+  renderLog();
+}
+function renderLog(){
+  $("#log").innerHTML=G.log.map(l=>`<div class="${l.c}">▸ ${l.m}</div>`).join("");
+}
+
+/* ---------- d20 check ---------- */
+function check(sk1,sk2,diff){
+  const cb=crewBonus(sk1);
+  const bonus=skillOf(sk1)+Math.ceil(skillOf(sk2)/2)+cb.b;
+  const roll=rnd(1,20);
+  const total=roll+bonus;
+  return {roll,bonus,total,diff,crit:roll===20,fumble:roll===1,ok:roll===20||(roll!==1&&total>=diff),who:cb.who};
+}
+function checkLine(r){
+  return `<p class="muted">🎲 d20 roll: <b>${r.roll}</b> + skill <b>${r.bonus}</b> = <b>${r.total}</b> vs difficulty <b>${r.diff}</b>${r.who?` (with ${r.who.name})`:""}${r.crit?' — <b class="green">CRITICAL!</b>':r.fumble?' — <b class="red">FUMBLE!</b>':''}</p>`;
+}
+
+/* ---------- XP / levels ---------- */
+function gainXP(n){
+  G.xp+=n;
+  while(G.xp>=G.xpNext){
+    G.xp-=G.xpNext; G.lvl++; G.xpNext=Math.round(G.xpNext*1.5);
+    G.skillPts+=2;
+    log(`⭐ Level up! You are now level ${G.lvl}. +2 skill points.`,"green");
+  }
+}
+
+/* ---------- map background (procedural Miami-ish grid) ---------- */
+function drawMap(){
+  const svg=$("#mapbg"); let s="";
+  s+=`<rect width="600" height="440" fill="#e7d6a3"/>`;
+  // water (bay on the right)
+  s+=`<path d="M600,0 L600,440 L540,440 C560,360 545,300 558,220 C570,140 548,60 565,0 Z" fill="#9fb8c8"/>`;
+  s+=`<path d="M600,0 L600,440 L572,440 C585,350 575,250 588,150 C595,80 585,40 592,0 Z" fill="#8fadc0"/>`;
+  // parks
+  s+=`<rect x="60" y="180" width="70" height="55" rx="6" fill="#b9c98e"/>`;
+  s+=`<rect x="330" y="300" width="80" height="60" rx="6" fill="#b9c98e"/>`;
+  s+=`<rect x="240" y="60" width="55" height="45" rx="6" fill="#b9c98e"/>`;
+  // street grid
+  for(let x=20;x<540;x+=40) s+=`<line x1="${x}" y1="0" x2="${x}" y2="440" stroke="#c9b276" stroke-width="3"/>`;
+  for(let y=20;y<440;y+=40) s+=`<line x1="0" y1="${y}" x2="545" y2="${y}" stroke="#c9b276" stroke-width="3"/>`;
+  // highways
+  s+=`<line x1="0" y1="120" x2="545" y2="100" stroke="#b09a5e" stroke-width="7"/>`;
+  s+=`<line x1="160" y1="0" x2="200" y2="440" stroke="#b09a5e" stroke-width="7"/>`;
+  s+=`<line x1="0" y1="320" x2="545" y2="340" stroke="#b09a5e" stroke-width="7"/>`;
+  // blocks shading
+  for(let i=0;i<40;i++){
+    const bx=rnd(0,12)*40+24, by=rnd(0,10)*40+24;
+    s+=`<rect x="${bx}" y="${by}" width="${rnd(10,30)}" height="${rnd(8,28)}" fill="#d8c48d" opacity="0.8"/>`;
+  }
+  svg.innerHTML=s;
+}
+
+/* =================================================================
+   RENDERING
+   ================================================================= */
+function render(){
+  if(!G) return;
+  $("#uiDay").textContent=G.day;
+  $("#uiCash").textContent=fmt$(G.cash);
+  $("#uiDebt").textContent=fmt$(G.debt);
+  $("#uiCosts").textContent=fmt$(dailyCosts());
+  $("#uiAP").textContent=G.ap;
+  $("#uiName").textContent=G.name;
+  $("#uiFace").textContent=G.face;
+  $("#uiLvl").textContent=G.lvl;
+  $("#uiXP").textContent=`${G.xp}/${G.xpNext}`;
+  $("#uiHPt").textContent=G.hp+"%";
+  $("#uiHP").style.width=G.hp+"%";
+  $("#wantedStars").innerHTML=`<span style="color:#b03a3a">${"★".repeat(G.wanted)}</span>${"☆".repeat(6-G.wanted)}`;
+  // skills
+  $("#uiSkills").innerHTML=SKILLS.map(s=>{
+    const base=G.skills[s], eff=skillOf(s);
+    const dots=Array.from({length:8},(_,i)=>`<i class="${i<base?'on':''}"></i>`).join("");
+    return `<span>${cap(s)}</span><span class="dots">${dots}</span><b>${eff>base?`<span class="green">${eff}</span>`:base}</b>`;
+  }).join("");
+  $("#uiSkillPts").innerHTML=G.skillPts>0
+    ? `<button class="primary" style="width:100%" onclick="UI.spendSkills()">Spend ${G.skillPts} skill point${G.skillPts>1?"s":""}</button>`:"";
+  // gear
+  $("#uiGear").innerHTML=G.gear.length
+    ? G.gear.map(id=>{const it=ITEMS.find(i=>i.id===id);return `${it.ic} ${it.n}`;}).join("<br>")
+    : '<span class="muted">none</span>';
+  // crew
+  $("#uiCrew").innerHTML=G.crew.length
+    ? G.crew.map((m,i)=>`<div class="slotrow" onclick="UI.crewInfo(${i})"><span class="ic">${m.face}</span><span class="nm">${m.name}${m.out?" 🚑":""}</span><span class="muted">${fmt$(m.wage)}/d</span></div>`).join("")
+    : '<span class="muted">working alone</span>';
+  // hideout
+  const h=HIDEOUTS[G.hideout];
+  $("#uiHideout").innerHTML=
+    `<div class="statline"><span>${h.n}</span></div>
+     <div class="statline"><span>Car slots</span><b>${G.garage.length}/${h.cap}</b></div>
+     ${G.hideout<HIDEOUTS.length-1?`<button style="width:100%" onclick="UI.upgradeHideout()">Upgrade · ${fmt$(HIDEOUTS[G.hideout+1].cost)}</button>`:'<span class="muted">fully upgraded</span>'}`;
+  // garage
+  $("#uiGarage").innerHTML=G.garage.length
+    ? G.garage.map((c,i)=>{
+        const car=CARS[c.car];
+        return `<div class="slotrow" onclick="UI.carInfo(${i})"><span class="ic">${car.ic}</span><span class="nm">${car.n}</span><span class="${c.heat>0?'red':'green'}">${c.heat>0?"🔥"+c.heat:"❄"}</span></div>`;
+      }).join("")
+    : '<span class="muted">empty</span>';
+  renderPois();
+  renderLog();
+}
+
+function renderPois(){
+  const box=$("#pois"); let html="";
+  for(const f of FIXED_POIS){
+    html+=`<div class="poi fixed" style="left:${f.x}%;top:${f.y}%" onclick="UI.place('${f.id}')">${f.ic}<span class="tip">${f.n}</span></div>`;
+  }
+  G.missions.forEach((m,i)=>{
+    const t=MISSIONS.find(x=>x.id===m.t);
+    html+=`<div class="poi ${m.done?'done':''}" style="left:${m.x}%;top:${m.y}%" ${m.done?"":`onclick="UI.mission(${i})"`}>${t.ic}<span class="tip">${t.n}${m.car!==undefined?": "+CARS[m.car].n:""}</span></div>`;
+  });
+  box.innerHTML=html;
+}
+
+/* =================================================================
+   MODAL / UI ACTIONS
+   ================================================================= */
+const UI={
+  open(title,body){ $("#modalTitleText").textContent=title; $("#modalBody").innerHTML=body; $("#overlay").classList.add("open"); },
+  close(){ $("#overlay").classList.remove("open"); render(); },
+
+  needAP(){
+    if(G.over) return false;
+    if(G.ap<=0){ UI.open("Exhausted","<p>You're out of actions for tonight. End the day to rest up.</p><button class='primary' onclick='endDay()'>🌙 End Day</button>"); return false; }
+    return true;
+  },
+
+  /* ----- missions ----- */
+  mission(i){
+    if(!UI.needAP()) return;
+    const m=G.missions[i], t=MISSIONS.find(x=>x.id===m.t);
+    let extra="";
+    if(m.car!==undefined) extra=`<p>Target: <b>${CARS[m.car].ic} ${CARS[m.car].n}</b> (street value ${fmt$(CARS[m.car].v)}${m.bonus?`, collector pays <b class="gold">${Math.round(m.bonus*100)}%</b>`:""})</p>`;
+    if(m.stake) extra=`<p>Buy-in: <b>${fmt$(m.stake)}</b> — winner takes double.</p>`;
+    const diff=t.diff+(m.car!==undefined?CARS[m.car].d:0);
+    UI.open(`${t.ic} ${t.n}`,
+      `<p>${t.desc}</p>${extra}
+       <p class="muted">Skill check: <b>${cap(t.chk[0])}</b> (+ half ${cap(t.chk[1])}) vs difficulty <b>${diff}</b> · Heat +${t.heat} on success, more on failure.</p>
+       <button class="choice" onclick="doMission(${i})"><b>Do the job</b> <small>(1 action)</small></button>
+       <button class="choice" onclick="UI.close()">Walk away</button>`);
+  },
+
+  /* ----- fixed places ----- */
+  place(id){
+    if(G.over) return;
+    if(id==="fence") return UI.fence();
+    if(id==="shop") return UI.shop();
+    if(id==="bar") return UI.bar();
+    if(id==="shark") return UI.shark();
+    if(id==="hospital") return UI.hospital();
+    if(id==="hideout") return UI.hideoutInfo();
+  },
+
+  fence(){
+    const rows=G.garage.map((c,i)=>{
+      const car=CARS[c.car];
+      const price=fencePrice(c);
+      return `<div class="rowline"><span>${car.ic} ${car.n} ${c.heat>0?`<span class="red">🔥hot (−${c.heat*15}%)</span>`:'<span class="green">❄ cold</span>'}</span>
+        <button onclick="sellCar(${i})">Sell ${fmt$(price)}</button></div>`;
+    }).join("");
+    UI.open("💰 Manny's Fence",
+      `<p>"Bring me metal, I bring you money. Hot cars sell cheap — let 'em cool in your garage first."</p>
+       ${G.garage.length?rows:'<p class="muted">Your garage is empty.</p>'}`);
+  },
+
+  shop(){
+    const rows=ITEMS.map(it=>{
+      const owned=G.gear.includes(it.id);
+      return `<div class="rowline"><span>${it.ic} <b>${it.n}</b> <small class="muted">${it.special==="armor"?"halves injury damage":`+${it.b} ${cap(it.sk)}`}</small></span>
+        ${owned?'<span class="green">owned</span>':`<button onclick="buyItem('${it.id}')" ${G.cash<it.cost?"disabled":""}>${fmt$(it.cost)}</button>`}</div>`;
+    }).join("");
+    UI.open("🛠️ Pawn Shop","<p>\"No questions asked, no refunds given.\"</p>"+rows);
+  },
+
+  bar(){
+    if(!G.barOffers||G.barOffersDay!==G.day){
+      G.barOffers=[]; G.barOffersDay=G.day;
+      for(let i=0;i<3;i++){
+        const sk={}; SKILLS.forEach(s=>sk[s]=rnd(1,Math.min(6,2+G.lvl)));
+        const bestv=Math.max(...Object.values(sk));
+        G.barOffers.push({name:pick(NAMES),face:pick(["🧔","👩","👨‍🦲","🧑","👱","🧕"]),sk,wage:bestv*60+rnd(20,120),hire:bestv*400+rnd(100,500)});
+      }
+    }
+    const rows=G.barOffers.map((c,i)=>{
+      const best=SKILLS.map(s=>[s,c.sk[s]]).sort((a,b)=>b[1]-a[1]).slice(0,2);
+      return `<div class="rowline"><span>${c.face} <b>${c.name}</b> <small class="muted">${best.map(b=>cap(b[0])+" "+b[1]).join(", ")} · wage ${fmt$(c.wage)}/day</small></span>
+        <button onclick="hireCrew(${i})" ${G.cash<c.hire?"disabled":""}>Hire ${fmt$(c.hire)}</button></div>`;
+    }).join("");
+    UI.open("🍺 Flamingo Bar",
+      `<p>Smoke, neon and people who know people. Crew add half their best matching skill to your jobs.</p>${rows}
+       <p class="muted">New faces show up each day.</p>`);
+  },
+
+  shark(){
+    const d=DIFFS[G.diff];
+    UI.open("🦈 Loan Shark",
+      `<p>"The Syndicate says hello. Balance: <b class="red">${fmt$(G.debt)}</b>, growing ${(d.interest*100).toFixed(1)}% nightly."</p>
+       <div class="rowline"><span>Pay $1,000</span><button onclick="payDebt(1000)" ${G.cash<1000?"disabled":""}>Pay</button></div>
+       <div class="rowline"><span>Pay $10,000</span><button onclick="payDebt(10000)" ${G.cash<10000?"disabled":""}>Pay</button></div>
+       <div class="rowline"><span>Pay $100,000</span><button onclick="payDebt(100000)" ${G.cash<100000?"disabled":""}>Pay</button></div>
+       <div class="rowline"><span>Pay everything you have</span><button onclick="payDebt(G.cash)" ${G.cash<1?"disabled":""}>Pay ${fmt$(Math.min(G.cash,G.debt))}</button></div>
+       <p class="muted">Clear the debt and you're free. Take too long and the interest will bury you.</p>`);
+  },
+
+  hospital(){
+    const cost=(100-G.hp)*25;
+    UI.open("🏥 Free Clinic",
+      `<p>Health: <b>${G.hp}%</b></p>
+       ${G.hp>=100?'<p class="green">You\'re in perfect shape.</p>'
+        :`<button class="choice" onclick="heal()" ${G.cash<cost?"disabled":""}><b>Patch me up</b> <small>(${fmt$(cost)}, 1 action)</small></button>`}
+       <button class="choice" onclick="UI.close()">Leave</button>`);
+  },
+
+  hideoutInfo(){
+    const h=HIDEOUTS[G.hideout];
+    const next=HIDEOUTS[G.hideout+1];
+    UI.open("🏚️ "+h.n,
+      `<p>Your base of operations. Cars cool down here — heat drops by 1 each night.</p>
+       <div class="statline"><span>Car capacity</span><b>${G.garage.length}/${h.cap}</b></div>
+       <div class="statline"><span>Upkeep</span><b>${fmt$(h.costs)}/day</b></div>
+       ${next?`<button class="choice" onclick="UI.upgradeHideout()"><b>Upgrade to ${next.n}</b> <small>${fmt$(next.cost)} · ${next.cap} slots · ${fmt$(next.costs)}/day</small></button>`:""}
+       <button class="choice" onclick="UI.close()">Close</button>`);
+  },
+
+  upgradeHideout(){
+    const next=HIDEOUTS[G.hideout+1];
+    if(!next) return;
+    if(G.cash<next.cost){ UI.open("Hide-out",`<p>You need ${fmt$(next.cost)} for the ${next.n}.</p>`); return; }
+    G.cash-=next.cost; G.hideout++;
+    log(`🏚️ Moved into the ${next.n}. ${next.cap} car slots.`,"green");
+    UI.close();
+  },
+
+  crewInfo(i){
+    const m=G.crew[i];
+    UI.open(`${m.face} ${m.name}`,
+      `<table class="tbl"><tr>${SKILLS.map(s=>`<th>${cap(s).slice(0,5)}</th>`).join("")}</tr>
+       <tr>${SKILLS.map(s=>`<td>${m.sk[s]}</td>`).join("")}</tr></table>
+       <p style="margin-top:8px">Wage: <b>${fmt$(m.wage)}/day</b> ${m.out?'<span class="red">— recovering, back tomorrow</span>':""}</p>
+       <button class="choice danger" onclick="fireCrew(${i})">Cut them loose</button>
+       <button class="choice" onclick="UI.close()">Close</button>`);
+  },
+
+  carInfo(i){
+    const c=G.garage[i], car=CARS[c.car];
+    UI.open(`${car.ic} ${car.n}`,
+      `<p>Street value ${fmt$(car.v)} · Heat: ${c.heat>0?`<b class="red">${c.heat} (−${c.heat*15}% at the fence)</b>`:'<b class="green">cold</b>'}</p>
+       <p class="muted">Heat drops by 1 every night in the garage.</p>
+       <button class="choice" onclick="sellCar(${i})"><b>Sell to Manny now</b> <small>${fmt$(fencePrice(c))}</small></button>
+       <button class="choice" onclick="UI.close()">Keep it</button>`);
+  },
+
+  spendSkills(){
+    const rows=SKILLS.map(s=>`<div class="rowline"><span>${cap(s)} — <b>${G.skills[s]}</b></span>
+      <button onclick="raiseSkill('${s}')" ${G.skills[s]>=8?"disabled":""}>+1</button></div>`).join("");
+    UI.open(`⭐ Skill points: ${G.skillPts}`,rows+`<button class="choice" onclick="UI.close()">Done</button>`);
+  },
+
+  menu(){
+    UI.open("Menu",
+      `<button class="choice" onclick="saveSlots('save')"><b>💾 Save game</b></button>
+       <button class="choice" onclick="saveSlots('load')"><b>📂 Load game</b></button>
+       <button class="choice" onclick="exportSave()"><b>⬇️ Export save to file</b></button>
+       <button class="choice" onclick="$('#importFile').click()"><b>⬆️ Import save from file</b></button>
+       <button class="choice" onclick="UI.howto()"><b>❓ How to play</b></button>
+       <button class="choice danger" onclick="confirmNewGame()"><b>🔄 New game</b></button>
+       <button class="choice" onclick="UI.close()">Back</button>
+       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importSave(this)">`);
+  },
+
+  howto(){
+    UI.open("How to play",
+      `<p><b>Goal:</b> pay off your debt to the Syndicate before the interest buries you. Die or get locked up for good, and it's over.</p>
+       <p><b>Each night</b> you get ${G.apMax} actions. Click icons on the map: jobs are tested with a d20 roll plus your skill. Stolen cars go to your garage — let them cool before selling at the fence for full price.</p>
+       <p><b>Wanted level</b> rises with every crime. Police may stop you; run, bribe or fight. Lay low (end days without crimes) and it fades.</p>
+       <p><b>Crew</b> hired at the bar add half their best matching skill. The hide-out stores cars; upgrade it for more slots.</p>
+       <p>The game autosaves every night.</p>
+       <button class="choice" onclick="UI.close()">Got it</button>`);
+  }
+};
+
+/* =================================================================
+   GAME ACTIONS
+   ================================================================= */
+function doMission(i){
+  const m=G.missions[i], t=MISSIONS.find(x=>x.id===m.t);
+  if(G.ap<=0||m.done){ UI.close(); return; }
+  if(m.stake&&G.cash<m.stake){ UI.open("🏁 Street race",`<p>You need ${fmt$(m.stake)} for the buy-in.</p>`); return; }
+  G.ap--;
+  const diff=t.diff+(m.car!==undefined?CARS[m.car].d:0);
+  const r=check(t.chk[0],t.chk[1],diff);
+  m.done=true;
+  let body=checkLine(r);
+
+  if(r.ok){
+    let heat=t.heat;
+    if(m.stake){ // race
+      G.cash+=m.stake;
+      body+=`<p class="green"><b>You smoke them off the line!</b> You collect ${fmt$(m.stake*2)} — doubling your stake.</p>`;
+      log(`🏁 Won a street race: +${fmt$(m.stake)}`,"green");
+    } else if(m.car!==undefined){ // car theft
+      const car=CARS[m.car];
+      if(G.garage.length>=HIDEOUTS[G.hideout].cap){
+        const quick=Math.round(car.v*0.4);
+        G.cash+=quick;
+        body+=`<p class="green"><b>The ${car.n} is yours!</b> But your garage is full — you dump it on a street buyer for ${fmt$(quick)}.</p>`;
+        log(`🚗 Stole a ${car.n}, flipped fast for ${fmt$(quick)} (garage full)`,"green");
+      } else {
+        const heatLvl=m.bonus?0:rnd(2,4);
+        G.garage.push({car:m.car, heat:heatLvl, bonus:m.bonus});
+        if(m.bonus){
+          const pay=Math.round(car.v*m.bonus);
+          G.garage.pop(); G.cash+=pay;
+          body+=`<p class="green"><b>Delivered!</b> The collector inspects the ${car.n} and hands over <b>${fmt$(pay)}</b>.</p>`;
+          log(`📋 Special order: ${car.n} delivered for ${fmt$(pay)}`,"green");
+        } else {
+          body+=`<p class="green"><b>The ${car.n} is yours!</b> It's parked in your garage, still hot — let it cool before selling.</p>`;
+          log(`🚗 Stole a ${car.n} → garage`,"green");
+        }
+      }
+    } else {
+      const pay=Math.round(t.pay()*(r.crit?1.5:1));
+      G.cash+=pay;
+      body+=`<p class="green"><b>Clean job.</b> You walk away with <b>${fmt$(pay)}</b>${r.crit?" — critical haul!":""}.</p>`;
+      log(`${t.ic} ${t.n}: +${fmt$(pay)}`,"green");
+    }
+    if(r.crit) heat=Math.max(0,heat-1);
+    bumpWanted(heat);
+    gainXP(10+diff*2+(r.crit?15:0));
+    if(r.who) body+=`<p class="muted">${r.who.name} takes a 15% cut of crew jobs at day's end.</p>`;
+  } else {
+    // failure
+    if(m.stake){ G.cash-=m.stake; body+=`<p class="red"><b>You eat the wall on turn three.</b> The stake (${fmt$(m.stake)}) is gone.</p>`; log(`🏁 Lost a race: −${fmt$(m.stake)}`,"red"); }
+    else { body+=`<p class="red"><b>Botched it.</b> Alarms, shouting, you bail empty-handed.</p>`; log(`${t.ic} ${t.n}: failed`,"red"); }
+    bumpWanted(t.heat+(r.fumble?2:1));
+    gainXP(3);
+    if(r.fumble||rnd(1,20)<=4+G.wanted){
+      const dmg=injure(rnd(5,20));
+      body+=`<p class="red">You take a beating getting away. −${dmg}% health.</p>`;
+    }
+    if(r.who&&rnd(1,20)<=3){ r.who.out=true; body+=`<p class="red">${r.who.name} got hurt and needs a day to recover.</p>`; }
+  }
+  UI.open(`${t.ic} ${t.n}`, body+`<button class="choice primary" onclick="afterMission()">Continue</button>`);
+}
+
+function afterMission(){
+  UI.close();
+  if(checkGameOver()) return;
+  // police encounter chance scales with wanted level
+  const chance=G.wanted*2.2*DIFFS[G.diff].copMult;
+  if(rnd(1,100)<=chance) policeEncounter();
+}
+
+function bumpWanted(n){
+  if(n<=0) return;
+  let inc=0;
+  for(let i=0;i<n;i++) if(Math.random()<0.4) inc++;
+  if(n>=4&&inc===0) inc=1; // big jobs always draw some heat
+  G.wanted=Math.min(6,G.wanted+inc);
+}
+
+function injure(d){
+  if(G.gear.includes("armor")) d=Math.ceil(d/2);
+  G.hp=Math.max(0,G.hp-d);
+  return d;
+}
+
+/* ----- police ----- */
+function policeEncounter(){
+  UI.open("🚔 Police!",
+    `<p>Blue lights in the mirror. A cruiser swings in behind you — they know your face.</p>
+     <button class="choice" onclick="copAction('run')"><b>🏎️ Floor it</b> <small>Driving check vs ${10+G.wanted*2}</small></button>
+     <button class="choice" onclick="copAction('hide')"><b>🌫️ Ditch and hide</b> <small>Hiding check vs ${9+G.wanted*2}</small></button>
+     <button class="choice" onclick="copAction('talk')"><b>🎭 Talk your way out</b> <small>Acting check vs ${11+G.wanted*2}</small></button>
+     <button class="choice" onclick="copAction('bribe')" ${G.cash<G.wanted*1500?"disabled":""}><b>💵 Bribe</b> <small>${fmt$(G.wanted*1500)} — always works… usually</small></button>`);
+}
+function copAction(a){
+  let body="";
+  if(a==="bribe"){
+    const cost=G.wanted*1500;
+    G.cash-=cost;
+    if(rnd(1,20)>2){ body=`<p class="green">The bills disappear into a uniform pocket. "Drive safe." Wanted level −2.</p>`; G.wanted=Math.max(0,G.wanted-2); }
+    else { body=`<p class="red">Wrong cop. He takes the money <i>and</i> cuffs you.</p>`; UI.open("🚔 Police!",body+`<button class="choice" onclick="arrested()">Continue</button>`); return; }
+    UI.open("🚔 Police!",body+`<button class="choice primary" onclick="UI.close()">Continue</button>`); return;
+  }
+  const map={run:["driving",10],hide:["hiding",9],talk:["acting",11]};
+  const [sk,base]=map[a];
+  const r=check(sk,sk,base+G.wanted*2);
+  body=checkLine(r);
+  if(r.ok){ body+=`<p class="green">You slip the net. Heart pounding, but free.</p>`; if(r.crit){body+=`<p class="green">They lost you completely — wanted level −1.</p>`; G.wanted=Math.max(0,G.wanted-1);}
+    UI.open("🚔 Police!",body+`<button class="choice primary" onclick="UI.close()">Continue</button>`);
+  } else {
+    if(a==="run"){ const dmg=injure(rnd(10,25)); body+=`<p class="red">You clip a divider and spin out. −${dmg}% health.</p>`; }
+    body+=`<p class="red">They've got you.</p>`;
+    UI.open("🚔 Police!",body+`<button class="choice" onclick="arrested()">Continue</button>`);
+  }
+}
+function arrested(){
+  G.arrests++;
+  if(G.wanted>=5||G.arrests>=3){
+    G.over=true;
+    UI.open("⛓️ PRISON",
+      `<p>Too many strikes. The judge doesn't even look up: <b>fifteen years</b>.</p>
+       <p>You survived ${G.day} days and stashed ${fmt$(G.cash)} — money you'll never spend.</p>
+       <p class="red"><b>GAME OVER</b></p>
+       <button class="choice primary" onclick="confirmNewGame(true)">Start over</button>
+       <button class="choice" onclick="saveSlots('load')">Load a save</button>`);
+    render(); return;
+  }
+  const days=G.wanted, fine=Math.min(G.cash,G.wanted*2000+500);
+  G.cash-=fine;
+  for(let i=0;i<days;i++) nightTick(true);
+  G.day+=days;
+  G.wanted=0; G.ap=G.apMax;
+  genMissions();
+  log(`⛓️ Arrested! ${days} day(s) in county lockup, ${fmt$(fine)} in fines. (Strike ${G.arrests}/3)`,"red");
+  UI.open("⛓️ County lockup",
+    `<p>They hold you for <b>${days} day${days>1?"s":""}</b> and fine you <b>${fmt$(fine)}</b>. Interest didn't take a day off.</p>
+     <p class="red">Strike ${G.arrests} of 3. One more serious arrest and it's prison for good.</p>
+     <button class="choice primary" onclick="UI.close()">Walk out</button>`);
+  saveGame(0);
+  if(checkGameOver()) return;
+}
+
+/* ----- economy actions ----- */
+function fencePrice(c){ return Math.round(CARS[c.car].v*(1-c.heat*0.15)); }
+function sellCar(i){
+  const c=G.garage[i];
+  const p=fencePrice(c);
+  G.cash+=p; G.garage.splice(i,1);
+  log(`💰 Sold ${CARS[c.car].n} for ${fmt$(p)}`,"green");
+  gainXP(5);
+  UI.fence();
+}
+function buyItem(id){
+  const it=ITEMS.find(i=>i.id===id);
+  if(G.cash<it.cost||G.gear.includes(id)) return;
+  G.cash-=it.cost; G.gear.push(id);
+  log(`🛠️ Bought ${it.n}`);
+  UI.shop();
+}
+function hireCrew(i){
+  const c=G.barOffers[i];
+  if(!c||G.cash<c.hire) return;
+  if(G.crew.length>=4){ UI.open("🍺 Flamingo Bar","<p>Four is a crew. Five is a liability. Cut someone loose first.</p>"); return; }
+  G.cash-=c.hire;
+  G.crew.push({name:c.name,face:c.face,sk:c.sk,wage:c.wage,out:false});
+  G.barOffers.splice(i,1);
+  log(`🍺 ${c.name} joined your crew`,"green");
+  UI.bar();
+}
+function fireCrew(i){
+  log(`👋 ${G.crew[i].name} left the crew`);
+  G.crew.splice(i,1);
+  UI.close();
+}
+function payDebt(n){
+  n=Math.min(n,G.cash,G.debt);
+  if(n<=0) return;
+  G.cash-=n; G.debt-=n;
+  log(`🦈 Paid ${fmt$(n)} to the Syndicate. Remaining: ${fmt$(G.debt)}`, G.debt<=0?"green":"");
+  if(G.debt<=0){ winGame(); return; }
+  UI.shark();
+}
+function heal(){
+  if(!UI.needAP()) return;
+  const cost=(100-G.hp)*25;
+  if(G.cash<cost) return;
+  G.cash-=cost; G.hp=100; G.ap--;
+  log(`🏥 Patched up at the clinic (${fmt$(cost)})`,"green");
+  UI.close();
+}
+function raiseSkill(s){
+  if(G.skillPts<=0||G.skills[s]>=8) return;
+  G.skills[s]++; G.skillPts--;
+  log(`⭐ ${cap(s)} raised to ${G.skills[s]}`,"green");
+  if(G.skillPts>0) UI.spendSkills(); else UI.close();
+}
+
+/* ----- end of day ----- */
+function nightTick(silent){
+  // interest, upkeep, cooling, crew cuts
+  const d=DIFFS[G.diff];
+  const interest=Math.round(G.debt*d.interest);
+  G.debt+=interest;
+  const costs=dailyCosts();
+  G.cash-=costs;
+  for(const c of G.garage) c.heat=Math.max(0,c.heat-1);
+  for(const m of G.crew) m.out=false;
+  if(G.cash<0){ // forced to borrow
+    G.debt+=Math.abs(G.cash)*2;
+    if(!silent) log(`🦈 Broke! The shark covers your ${fmt$(-G.cash)} of costs — and adds double to your debt.`,"red");
+    G.cash=0;
+  }
+  if(!silent&&interest>0) log(`🌙 Night ${G.day}: −${fmt$(costs)} costs · debt +${fmt$(interest)} interest`);
+}
+function endDay(){
+  if(G.over) return;
+  UI.close();
+  nightTick(false);
+  // heat decay if you laid low
+  const crimes=G.missions.filter(m=>m.done).length;
+  if(crimes===0&&G.wanted>0){ G.wanted=Math.max(0,G.wanted-2); log("🌫️ You laid low. Wanted level fades."); }
+  else if(G.wanted>0&&Math.random()<0.5){ G.wanted--; }
+  G.hp=Math.min(100,G.hp+5);
+  G.day++; G.ap=G.apMax;
+  genMissions();
+  saveGame(0);
+  log(`☀️ Day ${G.day}. Fresh marks on the map. (autosaved)`);
+  if(!checkGameOver()) render();
+}
+
+/* ----- win / lose ----- */
+function checkGameOver(){
+  if(G.over) return true;
+  if(G.hp<=0){
+    G.over=true;
+    UI.open("💀 DEAD",
+      `<p>You bled out in a parking lot off Biscayne. Day ${G.day}. The Syndicate writes off the debt — they're like that with the dead.</p>
+       <p class="red"><b>GAME OVER</b></p>
+       <button class="choice primary" onclick="confirmNewGame(true)">Start over</button>
+       <button class="choice" onclick="saveSlots('load')">Load a save</button>`);
+    render(); return true;
+  }
+  if(G.debt>DIFFS[G.diff].debt*3){
+    G.over=true;
+    UI.open("🌊 THE BAY",
+      `<p>The debt tripled. The Syndicate's patience didn't. Two men in nice suits offer you a boat ride.</p>
+       <p class="red"><b>GAME OVER</b> — day ${G.day}.</p>
+       <button class="choice primary" onclick="confirmNewGame(true)">Start over</button>
+       <button class="choice" onclick="saveSlots('load')">Load a save</button>`);
+    render(); return true;
+  }
+  return false;
+}
+function winGame(){
+  G.won=true;
+  log("🏆 DEBT PAID. You're free.","green");
+  UI.open("🏆 FREE & CLEAR",
+    `<p>You slide the last stack across the table. The shark counts it twice, then smiles for the first time ever.</p>
+     <p><b>"We're square."</b></p>
+     <p>It took you <b>${G.day} days</b>. You walk out into the Miami sun with <b class="green">${fmt$(G.cash)}</b> in your pocket and nobody hunting you.</p>
+     <p class="gold"><b>YOU WIN!</b></p>
+     <button class="choice primary" onclick="UI.close()">Keep playing (free roam)</button>
+     <button class="choice" onclick="confirmNewGame(true)">New game</button>`);
+  render();
+}
+
+/* =================================================================
+   SAVE / LOAD
+   ================================================================= */
+function saveGame(slot){ try{ localStorage.setItem(SAVEKEY+slot, JSON.stringify(G)); }catch(e){} }
+function loadGame(slot){
+  try{
+    const s=localStorage.getItem(SAVEKEY+slot);
+    if(!s) return false;
+    G=JSON.parse(s);
+    startUI();
+    log(`📂 Game loaded (slot ${slot===0?"autosave":slot}).`,"green");
+    return true;
+  }catch(e){ return false; }
+}
+function slotLabel(slot){
+  try{
+    const s=localStorage.getItem(SAVEKEY+slot);
+    if(!s) return null;
+    const g=JSON.parse(s);
+    return `${g.name} · Day ${g.day} · ${fmt$(g.cash)} cash · ${fmt$(g.debt)} debt`;
+  }catch(e){ return null; }
+}
+function saveSlots(mode){
+  let rows="";
+  const slots=[[0,"Autosave"],[1,"Slot 1"],[2,"Slot 2"],[3,"Slot 3"]];
+  for(const [n,label] of slots){
+    const info=slotLabel(n);
+    if(mode==="save"&&n===0) continue;
+    rows+=`<div class="rowline"><span><b>${label}</b><br><small class="muted">${info||"— empty —"}</small></span>
+      <button onclick="${mode==='save'?`doSave(${n})`:`doLoad(${n})`}" ${mode==='load'&&!info?"disabled":""}>${mode==='save'?"Save":"Load"}</button></div>`;
+  }
+  UI.open(mode==="save"?"💾 Save game":"📂 Load game",rows+`<button class="choice" onclick="UI.menu()">Back</button>`);
+}
+function doSave(n){ saveGame(n); log(`💾 Saved to slot ${n}.`,"green"); UI.close(); }
+function doLoad(n){ if(loadGame(n)){ UI.close(); render(); } }
+function exportSave(){
+  const blob=new Blob([JSON.stringify(G,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`carthief6_${G.name}_day${G.day}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importSave(input){
+  const f=input.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+      const g=JSON.parse(rd.result);
+      if(!g.skills||g.day===undefined) throw 0;
+      G=g; startUI(); log("⬆️ Save imported.","green"); UI.close();
+    }catch(e){ alert("That file isn't a valid Car Thief 6 save."); } };
+  rd.readAsText(f);
+}
+function confirmNewGame(force){
+  if(force===true){ location.reload(); return; }
+  UI.open("🔄 New game",
+    `<p>Abandon the current run and create a new character? (Unsaved progress is lost — autosave keeps last night.)</p>
+     <button class="choice danger" onclick="location.reload()"><b>Yes, start over</b></button>
+     <button class="choice" onclick="UI.close()">Cancel</button>`);
+}
+
+/* =================================================================
+   CHARACTER CREATION + BOOT
+   ================================================================= */
+let selClass=0, selDiff=1;
+function renderCreate(){
+  $("#classList").innerHTML=CLASSES.map((c,i)=>
+    `<div class="classCard ${i===selClass?'sel':''}" onclick="selClass=${i};renderCreate()">
+      <span class="face">${c.face}</span><span><b>${c.name}</b><br><small class="muted">${c.desc}</small></span></div>`).join("");
+  document.querySelectorAll(".diffBtn").forEach(b=>b.classList.toggle("sel",+b.dataset.d===selDiff));
+  $("#diffDesc").textContent=DIFFS[selDiff].desc;
+  const c=CLASSES[selClass];
+  $("#skillPreview").innerHTML=SKILLS.map(s=>{
+    const v=c.sk[s];
+    const dots=Array.from({length:8},(_,i)=>`<i class="${i<v?'on':''}"></i>`).join("");
+    return `<span>${cap(s)}</span><span class="dots">${dots}</span><b>${v}</b>`;
+  }).join("");
+}
+document.querySelectorAll(".diffBtn").forEach(b=>b.onclick=()=>{selDiff=+b.dataset.d;renderCreate();});
+$("#startBtn").onclick=()=>{
+  newGame($("#cName").value.trim()||"Snake", CLASSES[selClass], selDiff);
+  startUI();
+};
+$("#loadFromCreate").onclick=()=>{
+  // need a G shell for the modal; try autosave first
+  if(!loadGame(0)&&!loadGame(1)&&!loadGame(2)&&!loadGame(3)){
+    alert("No saved games found on this browser yet.");
+  }
+};
+$("#menuBtn").onclick=()=>UI.menu();
+$("#endDayBtn").onclick=()=>endDay();
+$("#overlay").addEventListener("click",e=>{ if(e.target.id==="overlay") UI.close(); });
+
+function startUI(){
+  $("#screen-create").style.display="none";
+  $("#screen-game").style.display="flex";
+  drawMap();
+  render();
+}
+
+renderCreate();
+</script>
+</body>
+</html>
